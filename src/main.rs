@@ -18,6 +18,9 @@ const PALETTE: [Color; 8] = [
     Color(255, 255, 255),
 ];
 
+const GAMMA: f32 = 1.8;
+const SPREAD: f32 = 0.5;
+
 fn main() {
     use std::time::Instant;
     let now = Instant::now();
@@ -34,7 +37,7 @@ fn main() {
 
     let mut output = ImageBuffer::<Rgba<u8>, Vec<u8>>::new(width, height);
 
-    dither::dither_image(&img, &mut output, &PALETTE);
+    dither::dither_image(&img, GAMMA, SPREAD, &mut output, &PALETTE);
 
     let save = image::save_buffer(
         "images/out.png",
