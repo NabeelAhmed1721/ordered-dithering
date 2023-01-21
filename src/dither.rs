@@ -5,6 +5,7 @@ use image::{DynamicImage, GenericImageView, ImageBuffer, Rgba};
 
 pub fn dither_image(
     image: &DynamicImage,
+    // TODO: add generic support
     output: &mut ImageBuffer<Rgba<u8>, Vec<u8>>,
     palette: &[Color],
 ) {
@@ -23,6 +24,7 @@ pub fn dither_image(
 
         bayer(0, 0);
 
+        // TODO: improve code readablity
         let query_color = Color(
             f32::min(
                 255.0 * f32::powf(r as f32 / 255.0, gamma) + spread * bay as f32,
@@ -49,6 +51,7 @@ pub fn dither_image(
             Rgba([closest_color.0, closest_color.1, closest_color.2, 255]),
         );
 
+        // TODO: move this to its own module
         print!("\x1B[2J\x1B[1;1H");
         let loc = x % width + ((y * width) % (width * width));
         let progress = ((loc as f32 / ((width as f32 * height as f32) - 1.0)) * 100.0) as u32;
@@ -56,6 +59,7 @@ pub fn dither_image(
     }
 }
 
+// TODO: organize different pre-computed bayer matrix sizes
 fn bayer(x: u32, y: u32) -> u32 {
     // bayer matrix 8x8
     let matrix: [u32; 64] = [

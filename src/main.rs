@@ -5,6 +5,7 @@ mod utlity;
 use color::Color;
 use image::{self, ImageBuffer, Rgba};
 
+// TODO: find a way to send palette arguments
 // pre-generated 8 bit color palette
 const PALETTE: [Color; 8] = [
     Color(0, 0, 0),
@@ -22,6 +23,7 @@ fn main() {
     let now = Instant::now();
     let (width, height) = (512, 512);
 
+    // TODO: parse command line arguments instead of hard-linking a path
     let img = image::open("images/selfie.jpg");
 
     let img = match img {
@@ -50,3 +52,5 @@ fn main() {
     let elapsed = now.elapsed();
     println!("Elapsed: {:.2?}", elapsed);
 }
+
+// TODO: add tests
