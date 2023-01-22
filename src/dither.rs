@@ -18,8 +18,8 @@ pub fn dither_image(
     output: &mut ImageBuffer<Rgba<u8>, Vec<u8>>,
     palette: &[Color],
 ) {
-    let width: u32 = output.width();
-    let height: u32 = output.height();
+    // let width: u32 = output.width();
+    // let height: u32 = output.height();
 
     for (x, y, color) in image.pixels() {
         let [r, g, b, _] = color.0;
