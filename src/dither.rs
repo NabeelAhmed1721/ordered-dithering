@@ -45,12 +45,6 @@ pub fn dither_image(
             y,
             Rgba([closest_color.0, closest_color.1, closest_color.2, 255]),
         );
-
-        // TODO: move this to its own module
-        print!("\x1B[2J\x1B[1;1H");
-        let loc = x % width + ((y * width) % (width * width));
-        let progress = ((loc as f32 / ((width as f32 * height as f32) - 1.0)) * 100.0) as u32;
-        println!("progress {}%", progress);
     }
 }
 
