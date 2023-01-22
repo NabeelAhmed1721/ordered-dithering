@@ -1,3 +1,5 @@
+use std::sync::{Arc, Mutex};
+
 use crate::color::Color;
 use crate::utlity;
 
@@ -11,18 +13,33 @@ const MATRIX: [u16; 64] = [
 ];
 
 pub fn dither_image(
+    thread_number: u32,
+    thread_id: u32,
     image: &DynamicImage,
     gamma: f32,
     spread: f32,
-    // TODO: add generic support
-    output: &mut ImageBuffer<Rgba<u8>, Vec<u8>>,
+    output: &mut Arc<Mutex<ImageBuffer<Rgba<u8>, Vec<u8>>>>,
     palette: &[Color],
 ) {
+    let mut output = output.lock().unwrap();
+
     let width: u32 = output.width();
     let height: u32 = output.height();
 
-    for (x, y, color) in image.pixels() {
-        let [r, g, b, _] = color.0;
+    // println!("{:?}", image.get_pixel(0, 1));
+
+    // let thread_number = 2;
+    // let thread_id = 0;
+    let thread_location_start = (width * height / thread_number) * thread_id;
+    let thread_location_end = (width * height / thread_number) * (thread_id + 1);
+
+    for i in thread_location_start..thread_location_end {
+        let (x, y) = (i % width, i / width);
+        let [r, g, b, _] = image.get_pixel(x, y).0;
+        // }
+
+        // for (x, y, color) in image.pixels() {
+        // let [r, g, b, _] = color.0;
 
         let bay = utlity::map_range_value(bayer(x, y), (0, 64), (0, 255));
 
@@ -45,12 +62,6 @@ pub fn dither_image(
             y,
             Rgba([closest_color.0, closest_color.1, closest_color.2, 255]),
         );
-
-        // TODO: move this to its own module
-        print!("\x1B[2J\x1B[1;1H");
-        let loc = x % width + ((y * width) % (width * width));
-        let progress = ((loc as f32 / ((width as f32 * height as f32) - 1.0)) * 100.0) as u32;
-        println!("progress {}%", progress);
     }
 }
 

@@ -2,8 +2,18 @@ mod color;
 mod dither;
 mod utlity;
 
+use std::sync::{Arc, Mutex};
+use std::thread::{self, JoinHandle};
+
 use color::Color;
 use image::{self, ImageBuffer, Rgba};
+
+struct ThreadWorker {
+    thread_handler: JoinHandle<()>,
+    thread_id: u32,
+}
+
+const THREAD_COUNT: u32 = 2;
 
 // TODO: find a way to send palette arguments
 // pre-generated 8 bit color palette
@@ -35,9 +45,51 @@ fn main() {
     }
     .resize(width, height, image::imageops::FilterType::Nearest);
 
-    let mut output = ImageBuffer::<Rgba<u8>, Vec<u8>>::new(width, height);
+    let img = Arc::new(Mutex::new(img));
 
-    dither::dither_image(&img, GAMMA, SPREAD, &mut output, &PALETTE);
+    let output = Arc::new(Mutex::new(ImageBuffer::<Rgba<u8>, Vec<u8>>::new(
+        width, height,
+    )));
+
+    let mut thread_workers: Vec<ThreadWorker> = vec![];
+
+    for thread_id in 0..THREAD_COUNT {
+        let thread_img = Arc::clone(&img);
+        let mut thread_output = Arc::clone(&output);
+
+        let thread_handler = thread::spawn(move || {
+            dither::dither_image(
+                THREAD_COUNT,
+                thread_id,
+                &thread_img.lock().unwrap(),
+                GAMMA,
+                SPREAD,
+                &mut thread_output,
+                &PALETTE,
+            );
+        });
+
+        thread_workers.push(ThreadWorker {
+            thread_handler,
+            thread_id,
+        });
+    }
+
+    for thread_worker in thread_workers {
+        let ThreadWorker {
+            thread_handler,
+            thread_id,
+        } = thread_worker;
+
+        match thread_handler.join() {
+            Ok(_) => println!("Thread #{} complete.", thread_id + 1),
+            Err(error) => panic!("{:?}", error),
+        }
+    }
+
+    println!("All threads complete.");
+
+    let output = output.lock().unwrap();
 
     let save = image::save_buffer(
         "images/out.png",
