@@ -1,19 +1,21 @@
 mod color;
 mod dither;
-mod utlity;
+mod utility;
 
-use std::sync::{Arc, Mutex};
+use std::sync::Arc;
 use std::thread::{self, JoinHandle};
 
 use color::Color;
 use image::{self, ImageBuffer, Rgba};
 
-struct ThreadWorker {
-    thread_handler: JoinHandle<()>,
+use crate::dither::DitherJob;
+
+struct ThreadWorker<Job> {
+    thread_handler: JoinHandle<Job>,
     thread_id: u32,
 }
 
-const THREAD_COUNT: u32 = 2;
+const THREAD_COUNT: u32 = 4;
 
 // TODO: find a way to send palette arguments
 // pre-generated 8 bit color palette
@@ -45,26 +47,22 @@ fn main() {
     }
     .resize(width, height, image::imageops::FilterType::Nearest);
 
-    let img = Arc::new(Mutex::new(img));
+    let img = Arc::new(img);
 
-    let output = Arc::new(Mutex::new(ImageBuffer::<Rgba<u8>, Vec<u8>>::new(
-        width, height,
-    )));
+    // TODO: add mutex
+    let mut output = ImageBuffer::<Rgba<u8>, Vec<u8>>::new(width, height);
 
-    let mut thread_workers: Vec<ThreadWorker> = vec![];
+    let mut thread_workers: Vec<ThreadWorker<DitherJob>> = vec![];
 
     for thread_id in 0..THREAD_COUNT {
         let thread_img = Arc::clone(&img);
-        let mut thread_output = Arc::clone(&output);
-
         let thread_handler = thread::spawn(move || {
-            dither::dither_image(
+            return dither::dither_image(
                 THREAD_COUNT,
                 thread_id,
-                &thread_img.lock().unwrap(),
+                thread_img,
                 GAMMA,
                 SPREAD,
-                &mut thread_output,
                 &PALETTE,
             );
         });
@@ -75,6 +73,11 @@ fn main() {
         });
     }
 
+    /*
+        This is more of a clean up.
+        Doesn't actually tell when a thread is complete.
+        It runs when ALL are eventually complete.
+    */
     for thread_worker in thread_workers {
         let ThreadWorker {
             thread_handler,
@@ -82,14 +85,20 @@ fn main() {
         } = thread_worker;
 
         match thread_handler.join() {
-            Ok(_) => println!("Thread #{} complete.", thread_id + 1),
+            Ok(DitherJob { buffer, from, to }) => {
+                for i in from..to + 1 {
+                    let x = i % width;
+                    let y = i / width;
+                    output.put_pixel(x, y, *buffer.get_pixel(x, y));
+                }
+
+                println!("Thread #{} job appended.", thread_id + 1)
+            }
             Err(error) => panic!("{:?}", error),
         }
     }
 
     println!("All threads complete.");
-
-    let output = output.lock().unwrap();
 
     let save = image::save_buffer(
         "images/out.png",
