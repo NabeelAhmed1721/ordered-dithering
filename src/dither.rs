@@ -5,6 +5,7 @@ use crate::utility;
 
 use image::{DynamicImage, GenericImageView, ImageBuffer, Rgba};
 
+#[derive(Debug)]
 pub struct DitherJob {
     pub buffer: ImageBuffer<Rgba<u8>, Vec<u8>>,
     pub from: u32,
