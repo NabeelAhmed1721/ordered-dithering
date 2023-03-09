@@ -10,7 +10,7 @@ use std::time::Instant;
 use color::Color;
 use image::{self, ImageBuffer, Rgba};
 
-use crate::dither::DitherJob;
+use crate::dither::{Dither, DitherJob};
 use crate::worker::WorkerCollection;
 
 const THREAD_COUNT: u32 = 8;
@@ -44,24 +44,23 @@ fn main() {
         Err(error) => panic!("{}", error),
     };
 
-    let img = Arc::new(img);
+    let reference_image = Arc::new(img);
     let mut output = ImageBuffer::<Rgba<u8>, Vec<u8>>::new(width, height);
 
     let mut manager = worker::Manager::<DitherJob>::new(THREAD_COUNT);
     let worker_count = manager.worker_count;
 
-    manager.set_worker(&|id| {
-        let worker_image = Arc::clone(&img);
-        thread::spawn(move || {
-            dither::dither_image(
-                worker_count,
-                id,
-                worker_image,
-                GAMMA,
-                SPREAD,
-                &PALETTE,
-            )
-        })
+    let dither = Arc::new(Dither::new(
+        worker_count,
+        reference_image,
+        &PALETTE,
+        GAMMA,
+        SPREAD,
+    ));
+
+    manager.set_workers(&|id| {
+        let dither = Arc::clone(&dither);
+        thread::spawn(move || dither.dither_section(id))
     });
 
     manager.collect(&mut output);
@@ -82,5 +81,3 @@ fn main() {
     let elapsed = now.elapsed();
     println!("Elapsed: {:.2?}", elapsed);
 }
-
-// TODO: add tests

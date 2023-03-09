@@ -16,13 +16,13 @@ pub struct Worker<Job> {
 }
 
 impl<Job: Debug> Manager<Job> {
-    pub fn new(worker_count: u32) -> Manager<Job> {
+    pub fn new(worker_count: u32) -> Self {
         Manager {
             worker_count,
             workers: vec![],
         }
     }
-    pub fn set_worker(&mut self, worker_job: &dyn Fn(u32) -> JoinHandle<Job>) {
+    pub fn set_workers(&mut self, worker_job: &dyn Fn(u32) -> JoinHandle<Job>) {
         for id in 0..self.worker_count {
             let handler = worker_job(id);
             self.workers.push(Worker { handler, id });
