@@ -6,4 +6,4 @@ Implementation of [Ordered Dithering](https://en.wikipedia.org/wiki/Ordered_dith
 
 | Before (2448x2448 *scaled down to* 512x512) | After (512x512) |
 |--------|-------|
-|<img src="/images/selfie.jpg" alt="Input Image" width="512px" height="512px" />|<img src="/images/out.png" width="512px" height="512px" alt="Output Image" />|
+|<img src="/images/selfie.jpg" alt="Input Image" width="256px" height="256px" />|<img src="/images/out.png" width="256px" height="256px" alt="Output Image" />|
