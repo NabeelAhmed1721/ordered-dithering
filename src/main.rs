@@ -3,6 +3,7 @@ mod dither;
 mod utility;
 mod worker;
 
+use std::env::args;
 use std::sync::Arc;
 use std::thread::{self};
 use std::time::Instant;
@@ -33,18 +34,21 @@ const SPREAD: f32 = 0.5;
 
 fn main() {
     let now = Instant::now();
-    // let (width, height) = (0x100, 0x100);
+    let file_location: String = match args().nth(1) {
+        Some(value) => value,
+        None => panic!("No file location provided."),
+    };
+
     let (width, height) = (512, 512);
 
     // // TODO: parse command line arguments instead of hard-linking a path
-    let img = match image::open("images/selfie.jpg") {
+    let reference_image = match image::open(file_location) {
         Ok(img) => {
             img.resize(width, height, image::imageops::FilterType::Nearest)
         }
         Err(error) => panic!("{}", error),
     };
 
-    let reference_image = Arc::new(img);
     let mut output = ImageBuffer::<Rgba<u8>, Vec<u8>>::new(width, height);
 
     let mut manager = worker::Manager::<DitherJob>::new(THREAD_COUNT);

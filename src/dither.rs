@@ -1,5 +1,3 @@
-use std::sync::Arc;
-
 use crate::color::Color;
 use crate::utility;
 
@@ -22,7 +20,7 @@ pub struct DitherJob {
 
 pub struct Dither<'life> {
     worker_count: u32,
-    reference_image: Arc<DynamicImage>,
+    reference_image: DynamicImage,
     palette: &'life [Color],
     gamma: f32,
     spread: f32,
@@ -31,7 +29,7 @@ pub struct Dither<'life> {
 impl<'life> Dither<'life> {
     pub fn new(
         worker_count: u32,
-        reference_image: Arc<DynamicImage>,
+        reference_image: DynamicImage,
         palette: &'life [Color],
         gamma: f32,
         spread: f32,
@@ -46,9 +44,8 @@ impl<'life> Dither<'life> {
     }
 
     pub fn dither_section(&self, worker_id: u32) -> DitherJob {
-        let reference_image = Arc::clone(&self.reference_image);
         let (width, height) =
-            (reference_image.width(), reference_image.height());
+            (self.reference_image.width(), self.reference_image.height());
         let area = width * height;
 
         // TODO: dynamic buffer size per thread to optimize memory use
@@ -68,7 +65,7 @@ impl<'life> Dither<'life> {
 
         for i in thread_location_start..thread_location_end {
             let (x, y) = (i % width, i / width);
-            let [r, g, b, _] = reference_image.get_pixel(x, y).0;
+            let [r, g, b, _] = self.reference_image.get_pixel(x, y).0;
 
             let bay = utility::map_range_value(
                 Dither::get_bayer(x, y),
